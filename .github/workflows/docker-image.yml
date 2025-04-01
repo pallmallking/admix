@@ -1,8 +1,4 @@
-  name: Docker Image CI
-  docker login -u paul4022
-  dckr_pat_pB4Fw89-LBQDuWJhL1TAJFstCqI
-
-
+name: Docker Image CI
 
 on:
   push:
@@ -11,12 +7,22 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      run: docker build . --file Dockerfile --tag my-image-name:${{ github.sha }}
+
+    - name: Push the Docker image
+      run: docker push my-image-name:${{ github.sha }}
+
+    - name: Scan Docker image for vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: my-image-name:${{ github.sha }}
